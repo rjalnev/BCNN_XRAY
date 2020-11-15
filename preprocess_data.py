@@ -9,10 +9,7 @@ from imblearn.over_sampling import RandomOverSampler #for class balance
 
 from utils import plotClassDist, plotSamples, saveData
 
-def load_data(downsize = True, downsize_shape = (256, 256)):
-    '''Load the images, downsize if true, convert to greyscale, combine and generate labels.'''
-    
-def load_data(downsize = True, downsize_shape = (256, 256)):
+def load_images(downsize = True, downsize_shape = (256, 256)):
     '''Load the images, downsize if true, convert to greyscale, combine and generate labels.'''
     
     #get list of image paths
@@ -66,7 +63,7 @@ def randomOversample(data, labels):
 
 def main():
     #load the images
-    data, labels = load_data()
+    data, labels = load_images()
     
     #check imbalance
     print('Data Shape:', data.shape, 'Labels Shape', labels.shape)
