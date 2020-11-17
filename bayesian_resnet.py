@@ -1,0 +1,1 @@
+# gonna ty to replace conv2d layers in my resnet with conv2D flipout later in tf probs
