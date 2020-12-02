@@ -11,11 +11,11 @@ class ResNet():
     def __init__(self, load = False, directory = './model/', input_shape = None, num_classes = None,
                  num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1]):
         ''''''
-        # need to add in check for load = true or other vars filled in #############################################
         if load:
             self.model = load_model(directory + 'model.h5')
             self.current_epoch = np.genfromtxt(directory + 'model_history.csv', delimiter = ',', skip_header = 1).shape[0]
         else:
+            assert (input_shape != None or num_classes != None), 'The arguments input_shape and num_filters must be specified if not loading a model.'
             self.model = self.build_model(input_shape, num_classes, num_filters, kernel, blocks);
             self.current_epoch = 0
     
@@ -51,7 +51,6 @@ class ResNet():
                 
         out = AveragePooling2D(name = 'avgPool')(out)
         out = Flatten(name = 'flatten')(out)
-        # test an additional dense layer or two at some point ##################################################
         out = Dense(num_classes, activation='softmax', name = 'output')(out)
         
         model = Model(x, out, name = 'resnet')
