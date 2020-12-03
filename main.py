@@ -25,7 +25,7 @@ def main():
     #bayesian resnet
     bayesian_resnet = BayesianResNet(input_shape = (256, 256, 1), num_classes = 2) #init model
     opt2 = Adam(learning_rate = 1e-3, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False) #setup optimizer
-    bayesian_resnet.fit(np.expand_dims(data, axis = -1), to_categorical(labels), batch_size = 5, optimizer = opt2, save=False) #train model
+    bayesian_resnet.fit(np.expand_dims(data, axis = -1), to_categorical(labels), batch_size = 5, optimizer = opt2, save = False) #train model
     
 if __name__ == '__main__':
     main()
