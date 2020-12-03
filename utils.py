@@ -1,11 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plotClassDist(labels):
+def plotClassDist(labels, title=None):
     '''Plot the class distribution.'''
     classes, count = np.unique(labels, return_counts=True)
     plt.bar(classes, count, tick_label = classes.astype(np.int))
-    plt.title('Class Distribution')
+    if title == None:
+        plt.title('Class Distribution')
+    else:
+        plt.title(title)
     plt.xlabel('Class')
     plt.ylabel('Frequency')
     plt.show()
