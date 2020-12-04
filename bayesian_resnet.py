@@ -10,27 +10,34 @@ from utils import loadData, saveData, plotSamples, plotClassDist
 class BayesianResNet():
     
     def __init__(self, load = False, directory = './model/', input_shape = None, num_classes = None,
-                 num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1]):
+                 kl_weight = None, num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1]):
         ''''''
         if load:
             self.model = load_model(directory + 'model.h5')
             self.current_epoch = np.genfromtxt(directory + 'model_history.csv', delimiter = ',', skip_header = 1).shape[0]
         else:
-            assert (input_shape != None or num_classes != None), 'The arguments input_shape and num_filters must be specified if not loading a model.'
-            self.model = self.build_model(input_shape, num_classes, num_filters, kernel, blocks);
+            assert (input_shape != None or num_classes != None or kl_weight != None), 'The arguments input_shape, num_classes, and kl_weight must be specified if not loading a model.'
+            assert (kl_weight < 1 and kl_weight > 0), 'The argument kl_weight should be 1/num_samples to correctly scale the kl divergence.'
+            self.model = self.build_model(input_shape, num_classes, kl_weight, num_filters, kernel, blocks);
             self.current_epoch = 0
     
-    def build_model(self, input_shape, num_classes, num_filters, kernel, blocks):
+    def build_model(self, input_shape, num_classes, kl_weight, num_filters, kernel, blocks):
         ''''''
+        #kl divergence scaled by number of samples
+        kl_divergence_function = (lambda q, p, _: tfp.distributions.kl_divergence(q, p) * tf.cast(kl_weight, dtype = tf.float32))
+        
         def residual_block(x, num_filters, kernel, stride, index):
-            out = tfp.layers.Convolution2DFlipout(num_filters, kernel, stride, padding = 'same', name = 'C{}'.format(index))(x)
+            out = tfp.layers.Convolution2DFlipout(num_filters, kernel, stride, padding = 'same', name = 'C{}'.format(index),
+                                                  kernel_divergence_fn = kl_divergence_function)(x)
             index += 1
             out = ReLU(name = 'RELU{}'.format(index-1))(out)
             out = BatchNormalization(name = 'BN{}'.format(index-1))(out)
-            out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C{}'.format(index))(out)
+            out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C{}'.format(index),
+                                                  kernel_divergence_fn = kl_divergence_function)(out)
             index += 1
             if stride == 2: #Need to downsample input by have to match dimensions
-                x = tfp.layers.Convolution2DFlipout(num_filters, 1, stride, padding = 'same', name = 'C_DS{}'.format(index-3))(x)
+                x = tfp.layers.Convolution2DFlipout(num_filters, 1, stride, padding = 'same', name = 'C_DS{}'.format(index-3),
+                                                    kernel_divergence_fn = kl_divergence_function)(x)
             out = Add(name = 'ADD{}'.format(index-3))([x, out])
             out = ReLU(name = 'RELU{}'.format(index-1))(out)
             out = BatchNormalization(name = 'BN{}'.format(index-1))(out)
@@ -38,7 +45,8 @@ class BayesianResNet():
 
         x = Input(shape = input_shape, name = 'input')
         
-        out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C1')(x)
+        out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C1',
+                                              kernel_divergence_fn = kl_divergence_function)(x)
         out = ReLU(name = 'RELU1')(out)
         out = BatchNormalization(name = 'BN1')(out)
         
@@ -52,7 +60,8 @@ class BayesianResNet():
                 
         out = AveragePooling2D(name = 'avgPool')(out)
         out = Flatten(name = 'flatten')(out)
-        out = tfp.layers.DenseFlipout(num_classes, activation='softmax', name = 'output')(out)
+        out = tfp.layers.DenseFlipout(num_classes, activation='softmax', name = 'output',
+                                      kernel_divergence_fn = kl_divergence_function)(out)
         
         model = Model(x, out, name = 'resnet')
         model.summary()
