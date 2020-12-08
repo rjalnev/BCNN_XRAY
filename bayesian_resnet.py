@@ -16,7 +16,7 @@ class BayesianResNet():
             self.model = load_model(directory + 'model.h5')
             self.current_epoch = np.genfromtxt(directory + 'model_history.csv', delimiter = ',', skip_header = 1).shape[0]
         else:
-            assert (input_shape != None or num_classes != None or kl_weight != None), 'The arguments input_shape, num_classes, and kl_weight must be specified if not loading a model.'
+            assert (input_shape is not None or num_classes is not None or kl_weight is not None), 'The arguments input_shape, num_classes, and kl_weight must be specified if not loading a model.'
             assert (kl_weight < 1 and kl_weight > 0), 'The argument kl_weight should be 1/num_samples to correctly scale the kl divergence.'
             self.model = self.build_model(input_shape, num_classes, kl_weight, num_filters, kernel, blocks);
             self.current_epoch = 0
@@ -101,4 +101,4 @@ class BayesianResNet():
         pred = np.asarray([self.model.predict(x) for _ in range(mc_steps)])
         mean_pred = np.mean(pred, axis = 0)
         entropy = np.apply_along_axis(entropy, axis = 1, arr = mean_pred) 
-        return mean_pred, entropy   
+        return np.argmax(mean_pred, axis = 1), entropy   
