@@ -1,9 +1,11 @@
 import numpy as np
+import os
 
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, ReLU, BatchNormalization, Add, AveragePooling2D, Flatten
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 
 from utils import loadData, saveData, plotSamples, plotClassDist
 
@@ -13,8 +15,8 @@ class BayesianResNet():
                  kl_weight = None, num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1]):
         ''''''
         if load:
-            self.model = load_model(directory + 'model.h5')
-            self.current_epoch = np.genfromtxt(directory + 'model_history.csv', delimiter = ',', skip_header = 1).shape[0]
+            self.model = load_model(directory + 'bayesian.h5')
+            self.current_epoch = np.genfromtxt(directory + 'bayesian_hist.csv', delimiter = ',', skip_header = 1).shape[0]
         else:
             assert (input_shape is not None or num_classes is not None or kl_weight is not None), 'The arguments input_shape, num_classes, and kl_weight must be specified if not loading a model.'
             assert (kl_weight < 1 and kl_weight > 0), 'The argument kl_weight should be 1/num_samples to correctly scale the kl divergence.'
@@ -72,8 +74,8 @@ class BayesianResNet():
         ''''''
         if save: # set callback functions if saving model
             if not os.path.exists(directory): os.makedirs(directory)
-            mpath = directory + "wifinet.h5"
-            hpath = directory + 'wifinet_history.csv'
+            mpath = directory + "bayesian.h5"
+            hpath = directory + 'bayesian_hist.csv'
             if validation_data is None:
                 checkpoint = ModelCheckpoint(filepath = mpath, monitor = 'loss', verbose = 0, save_best_only = True)
             else:
