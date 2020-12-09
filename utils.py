@@ -39,3 +39,7 @@ def loadData(path):
     data = np.load(path)
     print('Done!')
     return data['data'], data['labels']
+    
+def calculate_accuracy(pred_labels, true_labels):
+    '''Given the predicted labels and true labels calculate accuracy.'''
+    return np.sum(pred_labels == true_labels) / pred_labels.shape[0]
