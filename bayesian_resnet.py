@@ -63,7 +63,7 @@ class BayesianResNet():
         out = tfp.layers.DenseFlipout(num_classes, activation='softmax', name = 'output',
                                       kernel_divergence_fn = kl_divergence_function)(out)
         
-        model = Model(x, out, name = 'resnet')
+        model = Model(x, out, name = 'bayesian_resnet')
         model.summary()
         return model
     
