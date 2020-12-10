@@ -11,22 +11,26 @@ from utils import loadData, saveData, plotSamples, plotClassDist
 
 class BayesianResNet():
     
-    def __init__(self, load = False, directory = './model/', input_shape = None, num_classes = None,
-                 kl_weight = None, num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1]):
+    def __init__(self, input_shape, num_classes, num_filters = 32, kernel = 3, blocks = [1, 2, 2, 1],
+                 load = False, directory = './model/'):
         ''''''
-        if load:
-            self.model = load_model(directory + 'bayesian.h5')
+        # Note: error in using load_model for conv2dflipout and denseflipout layers even when passing them as custom objectes.
+        # Issues are described in detail in these posts: https://github.com/tensorflow/probability/issues/289
+        #                                                https://github.com/tensorflow/probability/issues/325
+        #                                                https://github.com/tensorflow/probability/issues/516
+        # Easy fix is to save_weights_only = True for ModelCheckpoint and load weights instead of model.
+        self.kl_weight = tf.Variable(1.0) #scaling factor for the kl divergence function, initialized to 1.0
+        self.model = self.build_model(input_shape, num_classes, num_filters, kernel, blocks);
+        if load: #load the weights from h5 file and set current epoch
+            self.model.load_weights(directory + 'bayesian.h5', by_name = True)
             self.current_epoch = np.genfromtxt(directory + 'bayesian_hist.csv', delimiter = ',', skip_header = 1).shape[0]
-        else:
-            assert (input_shape is not None or num_classes is not None or kl_weight is not None), 'The arguments input_shape, num_classes, and kl_weight must be specified if not loading a model.'
-            assert (kl_weight < 1 and kl_weight > 0), 'The argument kl_weight should be 1/num_samples to correctly scale the kl divergence.'
-            self.model = self.build_model(input_shape, num_classes, kl_weight, num_filters, kernel, blocks);
+        else: #new model, current epoch is zero
             self.current_epoch = 0
     
-    def build_model(self, input_shape, num_classes, kl_weight, num_filters, kernel, blocks):
+    def build_model(self, input_shape, num_classes, num_filters, kernel, blocks):
         ''''''
         #kl divergence scaled by number of samples
-        kl_divergence_function = (lambda q, p, _: tfp.distributions.kl_divergence(q, p) * tf.cast(kl_weight, dtype = tf.float32))
+        kl_divergence_function = (lambda q, p, _: tfp.distributions.kl_divergence(q, p) * self.kl_weight)
         
         def residual_block(x, num_filters, kernel, stride, index):
             out = tfp.layers.Convolution2DFlipout(num_filters, kernel, stride, padding = 'same', name = 'C{}'.format(index),
@@ -77,14 +81,15 @@ class BayesianResNet():
             mpath = directory + "bayesian.h5"
             hpath = directory + 'bayesian_hist.csv'
             if validation_data is None:
-                checkpoint = ModelCheckpoint(filepath = mpath, monitor = 'loss', verbose = 0, save_best_only = True)
+                checkpoint = ModelCheckpoint(filepath = mpath, monitor = 'loss', verbose = 0, save_best_only = True, save_weights_only = True)
             else:
-                checkpoint = ModelCheckpoint(filepath = mpath, monitor = 'val_loss', verbose = 0, save_best_only = True)
+                checkpoint = ModelCheckpoint(filepath = mpath, monitor = 'val_loss', verbose = 0, save_best_only = True, save_weights_only = True)
             cvs_logger = CSVLogger(hpath, separator = ',', append = True)
             callbacks = [cvs_logger, checkpoint]
         else:
             callbacks = None
         
+        self.kl_weight.assign(tf.cast(1.0 / X.shape[0], dtype = tf.float32)) #scale kl_divergence function by number of training samples
         self.model.compile(optimizer, 'categorical_crossentropy', ['accuracy'],
                            experimental_run_tf_function = False) #compile model
         self.model.fit( X, Y, validation_data = validation_data,
