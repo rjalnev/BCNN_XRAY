@@ -6,35 +6,43 @@ import numpy as np
 from time import time
 
 from tensorflow.keras.utils import to_categorical #use for one-hot encoding labels
-from tensorflow.keras.optimizers import Adam #optimizer
+from tensorflow.keras.optimizers import SGD #optimizer
 
 from resnet import ResNet
 from bayesian_resnet import BayesianResNet
 from utils import loadData, calculate_accuracy
 
-def train_models():
+def get_models(load_saved_model = False):
     ''''''
+    if load_saved_model:
+        resnet = ResNet(load = True) #load resnet
+        bayesian_resnet = BayesianResNet(input_shape = (256, 256, 1), num_classes = 2, load = True) #load bayesian resnet
+    else:
+        resnet = ResNet(input_shape = (256, 256, 1), num_classes = 2) #init resnet
+        bayesian_resnet = BayesianResNet(input_shape = (256, 256, 1), num_classes = 2) #init bayesian resnet
+    return resnet, bayesian_resnet
+
+def train_models(resnet, bayesian_resnet, num_epochs = 10):
+    ''''''
+    #load training and validation datasets
     train, train_labels = loadData('data/ros_data.npz')
     val, val_labels = loadData('data/val.npz')
     
-    #resnet with 4 stages with [1, 2, 2, 1] number of residual blocks
-    resnet = ResNet(input_shape = (256, 256, 1), num_classes = 2) #init model
-    opt1 = Adam(learning_rate = 1e-3, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False) #setup optimizer
-    resnet.fit(np.expand_dims(train, axis = -1), to_categorical(train_labels),
-                validation_data = [np.expand_dims(val, axis = -1), to_categorical(val_labels)],
-                epochs = 25, batch_size = 5, optimizer = opt1, save = True) #train model
-                
-    #bayesian resnet
-    bayesian_resnet = BayesianResNet(input_shape = (256, 256, 1), num_classes = 2, kl_weight = 1/train.shape[0]) #init model
-    opt2 = Adam(learning_rate = 1e-3, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False) #setup optimizer
+    opt = SGD(learning_rate = 1e-3) #setup optimizer
+    
+    #resnet.fit(np.expand_dims(train, axis = -1), to_categorical(train_labels),
+    #          validation_data = [np.expand_dims(val, axis = -1), to_categorical(val_labels)],
+    #           epochs = num_epochs, batch_size = 5, optimizer = opt, save = True) #train model
+    
     bayesian_resnet.fit(np.expand_dims(train, axis = -1), to_categorical(train_labels),
                         validation_data = [np.expand_dims(val, axis = -1), to_categorical(val_labels)],
-                        epochs = 25, batch_size = 5, optimizer = opt2, save = True) #train model
-    
+                        epochs = num_epochs, batch_size = 5, optimizer = opt, save = True) #train model
+
 def main():
     ''''''
 
-    train_models() # train resnet and bayesian resnet
+    resnet, bayesian_resnet = get_models(load_saved_model = False) #load or create the models
+    train_models(resnet, bayesian_resnet, num_epochs = 10) #train resnet and bayesian resnet until number of epochs trained reaches num_epochs
 
     #test, test_labels = loadData('data/test.npz');
     
