@@ -23,7 +23,7 @@ class BayesianResNet():
         self.model = self.build_model(input_shape, num_classes, num_filters, kernel, blocks);
         if load: #load the weights from h5 file and set current epoch
             self.model.load_weights(directory + 'bayesian.h5', by_name = True)
-            self.current_epoch = np.genfromtxt(directory + 'bayesian_hist.csv', delimiter = ',', skip_header = 1).shape[0]
+            self.current_epoch = np.genfromtxt(directory + 'bayesian_hist.csv', delimiter = ',', skip_header = 0).shape[0] - 1
         else: #new model, current epoch is zero
             self.current_epoch = 0
     
