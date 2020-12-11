@@ -30,7 +30,7 @@ class ResNet():
             out = BatchNormalization(name = 'BN{}'.format(index-1))(out)
             out = Conv2D(num_filters, kernel, 1, padding = 'same', name = 'C{}'.format(index))(out)
             index += 1
-            if stride == 2: #Need to downsample input by have to match dimensions
+            if stride == 2: #Need to downsample input by half to match dimensions
                 x = Conv2D(num_filters, 1, stride, padding = 'same', name = 'C_DS{}'.format(index-3))(x)
             out = Add(name = 'ADD{}'.format(index-3))([x, out])
             out = ReLU(name = 'RELU{}'.format(index-1))(out)
