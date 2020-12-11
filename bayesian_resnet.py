@@ -4,7 +4,7 @@ import os
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Input, ReLU, BatchNormalization, Add, AveragePooling2D, Flatten
+from tensorflow.keras.layers import Input, ReLU, BatchNormalization, Add, AveragePooling2D, Flatten, Conv2D
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 
 from utils import loadData, saveData, plotSamples, plotClassDist
@@ -34,16 +34,20 @@ class BayesianResNet():
         
         def residual_block(x, num_filters, kernel, stride, index):
             out = tfp.layers.Convolution2DFlipout(num_filters, kernel, stride, padding = 'same', name = 'C{}'.format(index),
-                                                  kernel_divergence_fn = kl_divergence_function)(x)
+                                                  kernel_divergence_fn = kl_divergence_function,
+                                                  bias_divergence_fn = kl_divergence_function)(x)
             index += 1
             out = ReLU(name = 'RELU{}'.format(index-1))(out)
             out = BatchNormalization(name = 'BN{}'.format(index-1))(out)
             out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C{}'.format(index),
-                                                  kernel_divergence_fn = kl_divergence_function)(out)
+                                                  kernel_divergence_fn = kl_divergence_function,
+                                                  bias_divergence_fn = kl_divergence_function)(out)
             index += 1
-            if stride == 2: #Need to downsample input by have to match dimensions
+            if stride == 2: #Need to downsample input by half to match dimensions
                 x = tfp.layers.Convolution2DFlipout(num_filters, 1, stride, padding = 'same', name = 'C_DS{}'.format(index-3),
-                                                    kernel_divergence_fn = kl_divergence_function)(x)
+                                                    kernel_divergence_fn = kl_divergence_function,
+                                                    bias_divergence_fn = kl_divergence_function)(x)
+            
             out = Add(name = 'ADD{}'.format(index-3))([x, out])
             out = ReLU(name = 'RELU{}'.format(index-1))(out)
             out = BatchNormalization(name = 'BN{}'.format(index-1))(out)
@@ -52,7 +56,8 @@ class BayesianResNet():
         x = Input(shape = input_shape, name = 'input')
         
         out = tfp.layers.Convolution2DFlipout(num_filters, kernel, 1, padding = 'same', name = 'C1',
-                                              kernel_divergence_fn = kl_divergence_function)(x)
+                                              kernel_divergence_fn = kl_divergence_function,
+                                              bias_divergence_fn = kl_divergence_function)(x)
         out = ReLU(name = 'RELU1')(out)
         out = BatchNormalization(name = 'BN1')(out)
         
@@ -67,7 +72,8 @@ class BayesianResNet():
         out = AveragePooling2D(name = 'avgPool')(out)
         out = Flatten(name = 'flatten')(out)
         out = tfp.layers.DenseFlipout(num_classes, activation='softmax', name = 'output',
-                                      kernel_divergence_fn = kl_divergence_function)(out)
+                                      kernel_divergence_fn = kl_divergence_function,
+                                      bias_divergence_fn = kl_divergence_function)(out)
         
         model = Model(x, out, name = 'bayesian_resnet')
         model.summary()
