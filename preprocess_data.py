@@ -20,7 +20,7 @@ def load_images(downsize = True, downsize_shape = (256, 256)):
     #load images, downsize, and append to numpy arrays
     normal = np.zeros((len(files_normal), *downsize_shape), dtype = np.uint8)
     for i, fname in enumerate(files_normal):
-        print('({}/{}) Loading image {} ...'.format(i, len(files_normal), fname))
+        print('({}/{}) Loading image {} ...'.format(i+1, len(files_normal), fname))
         #downsize image if true
         if downsize:
             img = resize(io.imread(fname), downsize_shape)
@@ -31,7 +31,7 @@ def load_images(downsize = True, downsize_shape = (256, 256)):
     
     pneumonia = np.zeros((len(files_pneumonia), *downsize_shape), dtype = np.uint8)
     for i, fname in enumerate(files_pneumonia):
-        print('({}/{}) Loading image {} ...'.format(i, len(files_pneumonia), fname))
+        print('({}/{}) Loading image {} ...'.format(i+1, len(files_pneumonia), fname))
         #downsize image if true
         if downsize:
             img = resize(io.imread(fname), downsize_shape)
