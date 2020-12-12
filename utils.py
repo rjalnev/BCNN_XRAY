@@ -43,3 +43,9 @@ def loadData(path):
 def calculate_accuracy(pred_labels, true_labels):
     '''Given the predicted labels and true labels calculate accuracy.'''
     return np.sum(pred_labels == true_labels) / pred_labels.shape[0]
+    
+def gen_fake_data(num_images):
+    '''Generate fake data.'''
+    images = np.random.randint(low = 0, high = 256,  size = (num_images, 256, 256))
+    labels = np.random.randint(low = 0, high = 2, size = num_images)
+    return images, labels
