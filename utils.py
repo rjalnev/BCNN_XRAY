@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from sklearn.metrics import precision_recall_fscore_support
+
 def plotClassDist(labels, title=None):
     '''Plot the class distribution.'''
     classes, count = np.unique(labels, return_counts=True)
@@ -40,12 +42,22 @@ def loadData(path):
     print('Done!')
     return data['data'], data['labels']
     
-def calculate_accuracy(pred_labels, true_labels):
-    '''Given the predicted labels and true labels calculate accuracy.'''
-    return np.sum(pred_labels == true_labels) / pred_labels.shape[0]
+def calculate_metrics(pred_labels, true_labels):
+    '''Given the predicted labels and true labels calculate accuracy, precision, recall, and f-score.'''
+    accuracy = np.sum(pred_labels == true_labels) / pred_labels.shape[0]
+    precision, recall, fscore, _ = precision_recall_fscore_support(true_labels, pred_labels, average = 'binary')
+    return [accuracy, precision, recall, fscore]
     
 def gen_fake_data(num_images):
     '''Generate fake data.'''
     images = np.random.randint(low = 0, high = 256,  size = (num_images, 256, 256))
     labels = np.random.randint(low = 0, high = 2, size = num_images)
     return images, labels
+    
+def print_metrics(model_name, metrics):
+    '''Format and print the metrics.'''
+    if len(metrics) == 5:
+        str_metrics = '{:8} | Accuracy: {:.4f} | Precision: {:.4f} | Recall: {:.4f} | FScore {:.4f} | Time: {:.2f} seconds'
+    else:
+        str_metrics = '{:8} | Accuracy: {:.4f} | Precision: {:.4f} | Recall: {:.4f} | FScore {:.4f}'
+    print(str_metrics.format(model_name, *metrics))
