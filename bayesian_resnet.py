@@ -106,7 +106,7 @@ class BayesianResNet():
                         
         self.current_epoch += epochs
         
-    def predict(self, x, mc_steps = 50):
+    def predict(self, x, mc_steps = 10):
         ''''''
         def entropy(p):
             return -1 * np.sum(np.log(p + 1e-15) * p, axis=0)
@@ -114,4 +114,4 @@ class BayesianResNet():
         pred = np.asarray([self.model.predict(x) for _ in range(mc_steps)])
         mean_pred = np.mean(pred, axis = 0)
         entropy = np.apply_along_axis(entropy, axis = 1, arr = mean_pred) 
-        return np.argmax(mean_pred, axis = 1), entropy   
+        return mean_pred, np.argmax(mean_pred, axis = 1), entropy   

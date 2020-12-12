@@ -16,6 +16,7 @@ class ResNet():
         if load:
             self.model = load_model(directory + 'resnet.h5')
             self.current_epoch = np.genfromtxt(directory + 'resnet_hist.csv', delimiter = ',', skip_header = 0).shape[0] - 1
+            self.model.summary()
         else:
             assert (input_shape is not None or num_classes is not None), 'The arguments input_shape and num_filters must be specified if not loading a model.'
             self.model = self.build_model(input_shape, num_classes, num_filters, kernel, blocks);
@@ -86,4 +87,9 @@ class ResNet():
         
     def predict(self, x):
         ''''''
-        return np.argmax(self.model.predict(x), axis = 1)
+        def entropy(p):
+            return -1 * np.sum(np.log(p + 1e-15) * p, axis=0)
+        
+        pred = self.model.predict(x)
+        entropy = np.apply_along_axis(entropy, axis = 1, arr = pred) 
+        return pred, np.argmax(pred, axis = 1), entropy
